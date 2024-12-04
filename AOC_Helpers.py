@@ -143,6 +143,17 @@ class Range:
         
     def __eq__(self, other):
         return self.start == other.start and self.end == other.end
+    
+    def __str__(self):
+        if not self.IsValid():
+            return "<invalid>"
+        return "<" + str(self.start) + "," + str(self.end) + ">"
+
+    def __repr__(self):
+        return str(self)
+
+    def __hash__(self):
+        return hash(repr(self))
         
     def IsValid(self):
         return self.start <= self.end
