@@ -1,10 +1,14 @@
 from AOC_Helpers import *
 import math
 
+counter = 0
+
 def Test(equation):
     print("Ok!" if equation else "Fail!")
     if not equation:
         raise Exception("fail")
+    global counter
+    counter += 1
 
 vec = Vec3(0, 4)
 Test(vec.GetMag() == 4)
@@ -28,5 +32,63 @@ def PathTest():
     
 PathTest()
 
+Test(not Range(10, 2).IsValid())
+
+Test(Range(0, 2).ContainsValue(0))
+Test(Range(0, 2).ContainsValue(1))
+Test(Range(0, 2).ContainsValue(2))
+Test(not Range(0, 2).ContainsValue(5))
+
+Test(Range(0, 5).Contains(Range(0, 0)))
+Test(Range(0, 5).Contains(Range(1, 4)))
+Test(Range(0, 5).Contains(Range(5, 5)))
+Test(not Range(0, 5).Contains(Range(3, 6)))
+
+Test(Range(0, 5).Intersects(Range(0, 0)))
+Test(Range(0, 5).Intersects(Range(1, 4)))
+Test(Range(0, 5).Intersects(Range(5, 5)))
+Test(Range(0, 5).Intersects(Range(3, 10)))
+Test(not Range(0, 5).Intersects(Range(6, 10)))
+Test(not Range().Intersects(Range()))
+
+Test(Range(0, 5).GetIntersection(Range(0, 0)) == Range(0,0))
+Test(Range(0, 5).GetIntersection(Range(1, 4)) == Range(1,4))
+Test(Range(0, 5).GetIntersection(Range(5, 5)) == Range(5,5))
+Test(Range(0, 5).GetIntersection(Range(3, 10)) == Range(3,5))
+Test(not Range(0, 5).GetIntersection(Range(6, 10)).IsValid())
+Test(not Range().GetIntersection(Range()).IsValid())
+
+Test(len(Range(0, 5).GetUnion(Range(0, 5))) == 1)
+Test(Range(0, 5).GetUnion(Range(0, 5))[0] == Range(0, 5))
+
+Test(len(Range(0, 5).GetUnion(Range(0, 5))) == 1)
+Test(Range(0, 5).GetUnion(Range(5, 5))[0] == Range(0, 5))
+
+Test(len(Range(0, 5).GetUnion(Range(5, 10))) == 1)
+Test(Range(0, 5).GetUnion(Range(5, 10))[0] == Range(0, 10))
+
+Test(len(Range(0, 5).GetUnion(Range(8, 10))) == 2)
+Test(Range(0, 5).GetUnion(Range(8, 10))[0] == Range(0, 5))
+Test(Range(0, 5).GetUnion(Range(8, 10))[1] == Range(8, 10))
+
+Test(len(Range().GetUnion(Range())) == 1)
+Test(not Range().GetUnion(Range())[0].IsValid())
+
+Test(len(Range(0, 5).Remove(Range(0, 5))) == 1)
+Test(not Range(0, 5).Remove(Range(0, 5))[0].IsValid())
+
+Test(len(Range(0, 5).Remove(Range(0, 5))) == 1)
+Test(Range(0, 5).Remove(Range(5, 5))[0] == Range(0, 4))
+
+Test(len(Range(0, 5).Remove(Range(5, 10))) == 1)
+Test(Range(0, 5).Remove(Range(5, 10))[0] == Range(0, 4))
+
+Test(len(Range(0, 5).Remove(Range(6, 10))) == 1)
+Test(not Range(0, 5).Remove(Range(6, 10))[0] == Range(0.5))
+
+Test(len(Range(0, 5).Remove(Range(2, 2))) == 2)
+Test(Range(0, 5).Remove(Range(2, 2))[0] == Range(0, 1))
+Test(Range(0, 5).Remove(Range(2, 2))[1] == Range(3, 5))
+
 print()
-print("All good!")
+print("All " + str(counter) + " tests succeeded!")

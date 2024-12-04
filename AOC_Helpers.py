@@ -137,3 +137,68 @@ def AStar(startNode, goalNode, heuristic = DefaultHeuristic):
                 fScore[neighbor] = score + heuristic(neighbor, goalNode)
                 openSet.add(neighbor)
     return []
+
+class Range:
+    def __init__(self, start = inf, end = -inf):
+        self.start = start
+        self.end = end
+        
+    def __eq__(self, other):
+        return self.start == other.start and self.end == other.end
+        
+    def IsValid(self):
+        return self.start <= self.end
+    
+    def Intersects(self, other):
+        return self.ContainsValue(other.start) or self.ContainsValue(other.end)
+    
+    def Contains(self, other):
+        return other.start >= self.start and other.end <= self.end
+
+    def ContainsValue(self, value):
+        return value >= self.start and value <= self.end
+
+    def Inverted(self):
+        if not self.IsValid():
+            return [Range(-inf, inf)]
+        return [Range(-inf, self.start), Range(self.end, inf)]
+
+    def GetUnion(self, other):
+        if (not other.IsValid()) or self.Contains(other):
+            return [self]
+        
+        if (not self.IsValid()) or other.Contains(self):
+            return [other]
+
+        if self.start < other.start:
+            first = self
+            second = other
+        else:
+            first = other
+            second = self
+            
+        if self.Intersects(other):
+            return [Range(first.start, second.end)]
+
+        return [Range(first.start, first.end), Range(second.start, second.end)]
+        
+    def GetIntersection(self, other):
+        if not self.Intersects(other):
+            return Range()
+        
+        return Range(max(self.start, other.start), min(self.end, other.end))
+
+    def Remove(self, other):
+        if not self.Intersects(other):
+            return [self]
+
+        intersection = self.GetIntersection(other)
+        l = Range(self.start, intersection.start - 1)
+        r = Range(intersection.end + 1, self.end)
+        
+        results = []
+        if l.IsValid():
+            results.append(l)
+        if r.IsValid() or len(results) == 0:
+            results.append(r)
+        return results
