@@ -1,7 +1,5 @@
-from asyncio.windows_events import NULL
 import math
 from collections import defaultdict
-from sqlite3 import connect
 
 class Vec3:
     def __init__(self, x, y, z = 0):
