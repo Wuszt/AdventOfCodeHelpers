@@ -59,7 +59,7 @@ class Vec3:
         return str(self)
 
     def __hash__(self):
-        return hash(repr(self))
+        return hash((self.x, self.y, self.z))
 
 inf = math.inf
 
