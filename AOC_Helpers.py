@@ -1,5 +1,6 @@
 import math
 from collections import defaultdict
+import heapq
 
 class Vec3:
     def __init__(self, x, y, z = 0):
@@ -69,12 +70,23 @@ class PathConnection:
         self.cost = cost
 
 class PathNode:
-    def __init__(self, pos, connections = []):
+    def __init__(self, pos, connections = [], userData = None, enabled = True):
         self.pos = pos
         self.connections = connections.copy()
+        self.userData = userData
+        self.enabled = enabled
+        
+class QueueNode():
+    def __init__(self, score, node):
+        self.score = score
+        self.node = node
+        self.valid = True
+
+    def __lt__(self, other):
+        return self.score < other.score
 
 def CreateNodes(emap, wallChar):
-    nodes = []
+    nodes = dict()
     for y in range(len(emap)):
         for x in range(len(emap[0])):
             if emap[y][x] != wallChar:
@@ -89,19 +101,26 @@ def CreateNodes(emap, wallChar):
                 if x < len(emap[0]) - 1 and emap[y][x+1] == 0:
                     neighbors.append(PathNode(Vec3(x+1,y)))
                 for neighbor in neighbors:
-                    for n in nodes:
-                        if n.pos == neighbor.pos:    
-                            node.connections.append(PathConnection(n))
-                            n.connections.append(PathConnection(node))
-                            break
-                nodes.append(node)
-    return nodes
+                    if neighbor.pos in nodes:
+                        n = nodes[neighbor.pos] 
+                        node.connections.append(PathConnection(n))
+                        n.connections.append(PathConnection(node))
+                nodes[node.pos] = node
+    return list(nodes.values())
 
 def DefaultHeuristic(start, end):
     return start.pos.SqrDistTo(end.pos)
 
-def AStar(startNode, goalNode, heuristic = DefaultHeuristic):
-    openSet = {startNode}
+class PathFindingResult:
+    def __init__(self, path, cost):
+        self.poses = [x.pos for x in path]
+        self.cost = cost
+        self.nodes = path
+        
+    def IsValid(self):
+        return len(self.poses) > 0
+
+def AStar(startNode, goalNode, heuristic = DefaultHeuristic, maxLength = inf):
     cameFrom = dict()
     def ReturnInf():
         return inf
@@ -110,31 +129,100 @@ def AStar(startNode, goalNode, heuristic = DefaultHeuristic):
 
     fScore = defaultdict(ReturnInf)
     fScore[startNode] = heuristic(startNode, goalNode)
+    
+    openQueue = [QueueNode(fScore[startNode], startNode)]
+    openSet = dict()
+    openSet[startNode] = openQueue[0]
 
     while len(openSet) > 0:
-        minVal = inf
-        current = None
-        for node in openSet:
-            if fScore[node] <= minVal:
-                minVal = fScore[node]
-                current = node
+        queueNode = heapq.heappop(openQueue)
+        while len(openQueue) > 0 and not queueNode.valid:
+            queueNode = heapq.heappop(openQueue)
+
+        current = queueNode.node
+        minVal = queueNode.score
         if current == goalNode:
             path = [current]
             while current in cameFrom.keys():
                 current = cameFrom[current]
                 path.append(current)
             path.reverse()
-            return [[x.pos for x in path], minVal]
-        openSet.remove(current)
+            return PathFindingResult(path, minVal)
+        del openSet[current]
         for connection in current.connections:
-            score = gScore[current] + connection.cost
-            neighbor = connection.node
-            if score < gScore[neighbor]:
-                cameFrom[neighbor] = current
-                gScore[neighbor] = score
-                fScore[neighbor] = score + heuristic(neighbor, goalNode)
-                openSet.add(neighbor)
-    return []
+            if connection.node.enabled:
+                score = gScore[current] + connection.cost
+                if score <= maxLength:
+                    neighbor = connection.node
+                    if score < gScore[neighbor]:
+                        cameFrom[neighbor] = current
+                        gScore[neighbor] = score
+                        fScore[neighbor] = score + heuristic(neighbor, goalNode)
+                        
+                        if neighbor in openSet:
+                            openSet[neighbor].valid = False
+                        newNode = QueueNode(fScore[neighbor], neighbor)
+                        openSet[neighbor] = newNode
+                        heapq.heappush(openQueue, newNode)
+                        
+    return PathFindingResult([],inf)
+
+class DijkstraResult:
+    def __init__(self, dists, prevs):
+        self.dists = dists
+        self.prevs = prevs
+
+    def GetPathTo(self, end):
+        path = []
+        cost = self.dists[end]
+        while end in self.prevs:
+            path.append(end)
+            end = self.prevs[end]
+            if self.dists[end] == 0:
+                path.append(end)
+                path.reverse()
+                return PathFindingResult(path, cost)
+
+        return PathFindingResult([], inf)
+
+def Dijkstra(nodes, start):
+    def ReturnInf():
+        return inf
+
+    prevs = dict()
+    dists = defaultdict(ReturnInf)
+    openQueue = []
+    openSet = dict()
+
+    dists[start] = 0
+    
+    for node in nodes:
+        queueNode = QueueNode(inf, node)
+        openQueue.append(queueNode)
+        openSet[node] = queueNode
+    
+    while len(openSet) > 0:        
+        queueNode = heapq.heappop(openQueue)
+        while len(openQueue) > 0 and not queueNode.valid:
+            queueNode = heapq.heappop(openQueue)
+
+        current = queueNode.node
+        minVal = queueNode.score
+        del openSet[current]
+        
+        for connection in current.connections:
+            if not connection.node in openSet:
+                continue
+            alt = dists[current] + connection.cost
+            if alt < dists[connection.node]:
+                dists[connection.node] = alt
+                openSet[connection.node].valid = False
+                newNode = QueueNode(alt, connection.node)
+                heapq.heappush(openQueue, newNode)
+                openSet[connection.node] = newNode
+                prevs[connection.node] = current
+    return DijkstraResult(dists, prevs)
+                
 
 class Range:
     def __init__(self, start = inf, end = -inf):
