@@ -92,13 +92,13 @@ def CreateNodes(emap, wallChar):
             if emap[y][x] != wallChar:
                 node = PathNode(Vec3(x,y))
                 neighbors = []
-                if y > 0 and emap[y - 1][x] == 0:
+                if y > 0 and emap[y - 1][x] != wallChar:
                     neighbors.append(PathNode(Vec3(x,y-1)))
-                if y < len(emap) - 1 and emap[y + 1][x] == 0:
+                if y < len(emap) - 1 and emap[y + 1][x] != wallChar:
                     neighbors.append(PathNode(Vec3(x,y+1)))
-                if x > 0 and emap[y][x-1] == 0:
+                if x > 0 and emap[y][x-1] != wallChar:
                     neighbors.append(PathNode(Vec3(x-1,y)))
-                if x < len(emap[0]) - 1 and emap[y][x+1] == 0:
+                if x < len(emap[0]) - 1 and emap[y][x+1] != wallChar:
                     neighbors.append(PathNode(Vec3(x+1,y)))
                 for neighbor in neighbors:
                     if neighbor.pos in nodes:
@@ -108,8 +108,11 @@ def CreateNodes(emap, wallChar):
                 nodes[node.pos] = node
     return list(nodes.values())
 
-def DefaultHeuristic(start, end):
+def EuclideanHeuristic(start, end):
     return start.pos.SqrDistTo(end.pos)
+
+def ManhattanHeuristic(start, end):
+    return abs(start.pos.x - end.pos.x) + abs(start.pos.y - end.pos.y)
 
 class PathFindingResult:
     def __init__(self, path, cost):
@@ -120,7 +123,17 @@ class PathFindingResult:
     def IsValid(self):
         return len(self.poses) > 0
 
-def AStar(startNode, goalNode, heuristic = DefaultHeuristic, maxLength = inf):
+def PrintGrid(grid, path : PathFindingResult = PathFindingResult([], inf)):
+    for y in range(len(grid)):
+        line = []
+        for x in range(len(grid[y])):
+            if Vec3(x,y) in path.poses:
+                line.append('X')
+            else:
+                line.append(grid[y][x])
+        print(''.join(line))
+
+def AStar(startNode, goalNode, heuristic = ManhattanHeuristic, maxLength = inf):
     cameFrom = dict()
     def ReturnInf():
         return inf
