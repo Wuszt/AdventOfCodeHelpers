@@ -1,4 +1,4 @@
-from AOC_Helpers import *
+from aoc import *
 import math
 
 counter = 0
