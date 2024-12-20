@@ -62,6 +62,9 @@ class Vec3:
     def __hash__(self):
         return hash((self.x, self.y, self.z))
 
+    def __abs__(self):
+        return Vec3(abs(self.x), abs(self.y), abs(self.z))
+
 inf = math.inf
 
 class PathConnection:
@@ -90,7 +93,7 @@ def CreateNodes(emap, wallChar):
     for y in range(len(emap)):
         for x in range(len(emap[0])):
             if emap[y][x] != wallChar:
-                node = PathNode(Vec3(x,y))
+                node = PathNode(Vec3(x,y), [], emap[y][x])
                 neighbors = []
                 if y > 0 and emap[y - 1][x] != wallChar:
                     neighbors.append(PathNode(Vec3(x,y-1)))
@@ -185,9 +188,15 @@ class DijkstraResult:
         self.dists = dists
         self.prevs = prevs
 
+    def GetCostTo(self, end):
+        return self.dists[end] if end in self.dists else inf
+
     def GetPathTo(self, end):
         path = []
         cost = self.dists[end]
+        if cost == 0:
+            return PathFindingResult([end], 0)
+
         while end in self.prevs:
             path.append(end)
             end = self.prevs[end]
@@ -210,8 +219,9 @@ def Dijkstra(nodes, start):
     dists[start] = 0
     
     for node in nodes:
-        queueNode = QueueNode(inf, node)
-        openQueue.append(queueNode)
+        score = inf if node != start else 0
+        queueNode = QueueNode(score, node)
+        heapq.heappush(openQueue, queueNode)
         openSet[node] = queueNode
     
     while len(openSet) > 0:        
@@ -234,8 +244,7 @@ def Dijkstra(nodes, start):
                 heapq.heappush(openQueue, newNode)
                 openSet[connection.node] = newNode
                 prevs[connection.node] = current
-    return DijkstraResult(dists, prevs)
-                
+    return DijkstraResult(dists, prevs)         
 
 class Range:
     def __init__(self, start = inf, end = -inf):
